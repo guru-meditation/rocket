@@ -15,13 +15,13 @@ let map: google.maps.Map,
   infoWindow: google.maps.InfoWindow,
   rocket: google.maps.Marker;
 
-var homePos = { lat: 52.93093371771126, lng: -1.1291451566825852 };
+var homePos = { lat: 52.93362396888282, lng: -1.1295868440978964 };
 var svgUrl = 'https://www.svgrepo.com/show/22855/startup.svg';
 
 var counter = 0;
-var step = 200;
 
 function initMap(): void {
+  var step = 50;
   infoWindow = new google.maps.InfoWindow();
 
   rocket = new google.maps.Marker({
@@ -38,6 +38,19 @@ function initMap(): void {
     zoom: 6,
   });
 
+  var mapDiv = $('#map');
+
+  var mapDim = {
+    height: mapDiv.height(),
+    width: mapDiv.width(),
+  };
+
+  console.log('map ' + mapDim.height);
+
+  var pub = createMarkerForPoint(homePos);
+  pub.setIcon('beer.svg');
+  pub.setMap(map);
+
   google.maps.event.addListenerOnce(map, 'idle', () => {
     setInterval(function () {
       var mePos = { lat: 0, lng: 0 };
@@ -50,8 +63,14 @@ function initMap(): void {
               lng: position.coords.longitude,
             };
 
-            moveTheThing(mePos);
+            moveTheThing(mePos, step);
             rotateTheThing(mePos);
+
+            calc_distance(mePos, homePos);
+
+            var bounds = createBoundsForMarkers(mePos, homePos);
+
+            map.setZoom(getBoundsZoomLevel(bounds, mapDim) - 2);
           },
           () => {
             handleLocationError(true, infoWindow, map.getCenter()!);
@@ -61,16 +80,80 @@ function initMap(): void {
         // Browser doesn't support Geolocation
         handleLocationError(false, infoWindow, map.getCenter()!);
       }
-    }, 10000/step);
+    }, 5000 / step);
   });
 
   rocket.setMap(map);
 }
 
-function moveTheThing(position) {
-  console.log('here >>> - ' + counter++);
-  var deltaLat = homePos.lat - position.lat;
-  var deltaLng = homePos.lng - position.lng;
+function createBoundsForMarkers(m1, m2) {
+  var bounds = new google.maps.LatLngBounds();
+
+  bounds.extend(m1);
+  bounds.extend(m2);
+
+  return bounds;
+}
+
+function createMarkerForPoint(point) {
+  return new google.maps.Marker({
+    position: new google.maps.LatLng(point.lat, point.lng),
+  });
+}
+
+function getBoundsZoomLevel(bounds, mapDim) {
+  var WORLD_DIM = { height: 256, width: 256 };
+  var ZOOM_MAX = 21;
+
+  function latRad(lat) {
+    var sin = Math.sin((lat * Math.PI) / 180);
+    var radX2 = Math.log((1 + sin) / (1 - sin)) / 2;
+    return Math.max(Math.min(radX2, Math.PI), -Math.PI) / 2;
+  }
+
+  function zoom(mapPx, worldPx, fraction) {
+    return Math.floor(Math.log(mapPx / worldPx / fraction) / Math.LN2);
+  }
+
+  var ne = bounds.getNorthEast();
+  var sw = bounds.getSouthWest();
+
+  var latFraction = (latRad(ne.lat()) - latRad(sw.lat())) / Math.PI;
+
+  var lngDiff = ne.lng() - sw.lng();
+  var lngFraction = (lngDiff < 0 ? lngDiff + 360 : lngDiff) / 360;
+
+  var latZoom = zoom(mapDim.height, WORLD_DIM.height, latFraction);
+  var lngZoom = zoom(mapDim.width, WORLD_DIM.width, lngFraction);
+
+  return Math.min(latZoom, lngZoom, ZOOM_MAX);
+}
+
+function calc_distance(mk1, mk2) {
+  var R = 3958.8; // Radius of the Earth in miles
+  var rlat1 = mk1.lat * (Math.PI / 180); // Convert degrees to radians
+  var rlat2 = mk2.lat * (Math.PI / 180); // Convert degrees to radians
+  var difflat = rlat2 - rlat1; // Radian difference (latitudes)
+  var difflon = (mk2.lng - mk1.lng) * (Math.PI / 180); // Radian difference (longitudes)
+
+  var d =
+    2 *
+    R *
+    Math.asin(
+      Math.sqrt(
+        Math.sin(difflat / 2) * Math.sin(difflat / 2) +
+          Math.cos(rlat1) *
+            Math.cos(rlat2) *
+            Math.sin(difflon / 2) *
+            Math.sin(difflon / 2)
+      )
+    );
+  return d;
+}
+
+function moveTheThing(position, step) {
+  var deltaLat = (position.lat - homePos.lat) / step;
+  var deltaLng = (position.lng - homePos.lng) / step;
 
   counter = counter + 1;
   if (counter > step) {
@@ -78,8 +161,8 @@ function moveTheThing(position) {
   }
 
   var flyPos = {
-    lat: position.lat + (deltaLat/step) * counter,
-    lng: position.lng + (deltaLng/step) * counter,
+    lat: position.lat - deltaLat * counter,
+    lng: position.lng - deltaLng * counter,
   };
 
   drawTheThing(flyPos);
