@@ -45,8 +45,6 @@ function initMap(): void {
     width: mapDiv.width(),
   };
 
-  console.log('map ' + mapDim.height);
-
   var pub = createMarkerForPoint(homePos);
   pub.setIcon('beer.svg');
   pub.setMap(map);
@@ -91,6 +89,9 @@ function createBoundsForMarkers(m1, m2) {
 
   bounds.extend(m1);
   bounds.extend(m2);
+
+  console.log("bounds ", bounds.toString());
+
 
   return bounds;
 }
