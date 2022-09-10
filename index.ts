@@ -34,6 +34,8 @@ function initMap(): void {
     },
   });
 
+  console.log("VITE_GOOGLE_MAPS_API_KEY - " + import.meta.env.VITE_GOOGLE_MAPS_API_KEY); 
+
   map = new google.maps.Map(document.getElementById('map') as HTMLElement, {
     zoom: 6,
   });
