@@ -38,86 +38,86 @@ function initMap(): void {
 
     map = new google.maps.Map(document.getElementById("map") as HTMLElement,
         {
-            center: { lat: 40.674, lng: -73.945 },
+            center: {lat: 40.674, lng: -73.945},
             zoom: 12,
             styles: [
-                { elementType: "geometry", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.stroke", stylers: [{ color: "#242f3e" }] },
-                { elementType: "labels.text.fill", stylers: [{ color: "#746855" }] },
+                {elementType: "geometry", stylers: [{color: "#242f3e"}]},
+                {elementType: "labels.text.stroke", stylers: [{color: "#242f3e"}]},
+                {elementType: "labels.text.fill", stylers: [{color: "#746855"}]},
                 {
                     featureType: "administrative.locality",
                     elementType: "labels.text.fill",
-                    stylers: [{ color: "#d59563" }],
+                    stylers: [{color: "#d59563"}],
                 },
                 {
                     featureType: "poi",
                     elementType: "labels.text.fill",
-                    stylers: [{ color: "#d59563" }],
+                    stylers: [{color: "#d59563"}],
                 },
                 {
                     featureType: "poi.park",
                     elementType: "geometry",
-                    stylers: [{ color: "#263c3f" }],
+                    stylers: [{color: "#263c3f"}],
                 },
                 {
                     featureType: "poi.park",
                     elementType: "labels.text.fill",
-                    stylers: [{ color: "#6b9a76" }],
+                    stylers: [{color: "#6b9a76"}],
                 },
                 {
                     featureType: "road",
                     elementType: "geometry",
-                    stylers: [{ color: "#38414e" }],
+                    stylers: [{color: "#38414e"}],
                 },
                 {
                     featureType: "road",
                     elementType: "geometry.stroke",
-                    stylers: [{ color: "#212a37" }],
+                    stylers: [{color: "#212a37"}],
                 },
                 {
                     featureType: "road",
                     elementType: "labels.text.fill",
-                    stylers: [{ color: "#9ca5b3" }],
+                    stylers: [{color: "#9ca5b3"}],
                 },
                 {
                     featureType: "road.highway",
                     elementType: "geometry",
-                    stylers: [{ color: "#746855" }],
+                    stylers: [{color: "#746855"}],
                 },
                 {
                     featureType: "road.highway",
                     elementType: "geometry.stroke",
-                    stylers: [{ color: "#1f2835" }],
+                    stylers: [{color: "#1f2835"}],
                 },
                 {
                     featureType: "road.highway",
                     elementType: "labels.text.fill",
-                    stylers: [{ color: "#f3d19c" }],
+                    stylers: [{color: "#f3d19c"}],
                 },
                 {
                     featureType: "transit",
                     elementType: "geometry",
-                    stylers: [{ color: "#2f3948" }],
+                    stylers: [{color: "#2f3948"}],
                 },
                 {
                     featureType: "transit.station",
                     elementType: "labels.text.fill",
-                    stylers: [{ color: "#d59563" }],
+                    stylers: [{color: "#d59563"}],
                 },
                 {
                     featureType: "water",
                     elementType: "geometry",
-                    stylers: [{ color: "#17263c" }],
+                    stylers: [{color: "#17263c"}],
                 },
                 {
                     featureType: "water",
                     elementType: "labels.text.fill",
-                    stylers: [{ color: "#515c6d" }],
+                    stylers: [{color: "#515c6d"}],
                 },
                 {
                     featureType: "water",
                     elementType: "labels.text.stroke",
-                    stylers: [{ color: "#17263c" }],
+                    stylers: [{color: "#17263c"}],
                 },
             ],
         });
@@ -133,35 +133,9 @@ function initMap(): void {
     base.setIcon(baseUrl);
     base.setMap(map);
 
-    var path = new google.maps.MVCArray();
-    var service = new google.maps.DirectionsService();
+    map.setCenter(homePos);
 
-    // Set the Path Stroke Color
-    var poly = new google.maps.Polyline({ map: map, strokeColor: '#4986E7' });
-
-    var lat_lng = new Array;
-    //Loop and Draw Path Route between the Points on MAP
-    for (var i = 0; i < lat_lng.length; i++) {
-        if ((i + 1) < lat_lng.length) {
-            var src = lat_lng[i];
-            var des = lat_lng[i + 1];
-            path.push(src);
-            poly.setPath(path);
-            service.route({
-                origin: src,
-                destination: des,
-                travelMode: google.maps.TravelMode.DRIVING
-            }, function (result, status) {
-                if (status == google.maps.DirectionsStatus.OK) {
-                    if(result) {
-                        for (var i = 0, len = result.routes[0].overview_path.length; i < len; i++) {
-                            path.push(result.routes[0].overview_path[i]);
-                        }
-                    }
-                }
-            });
-        }
-    }
+    var firstTime = true;
 
     google.maps.event.addListenerOnce(map, 'idle', () => {
         setInterval(function () {
@@ -175,15 +149,20 @@ function initMap(): void {
                             lng: position.coords.longitude,
                         };
 
+                        drawRoute(mePos, homePos);
+
+                        if (firstTime) {
+                            calc_distance(mePos, homePos);
+
+                            var bounds = createBoundsForMarkers(mePos, homePos);
+
+                            map.setZoom(getBoundsZoomLevel(bounds, mapDim) - 1);
+
+                            firstTime = false;
+                        }
+
                         moveTheThing(mePos, step);
-
                         rotateTheThing(mePos);
-
-                        calc_distance(mePos, homePos);
-
-                        var bounds = createBoundsForMarkers(mePos, homePos);
-
-                        map.setZoom(getBoundsZoomLevel(bounds, mapDim) - 1);
 
                         // updateCurveMarker(homePos, mePos);
                     },
@@ -199,6 +178,67 @@ function initMap(): void {
     });
 
     soldierMarker.setMap(map);
+
+
+}
+
+function drawRoute(pos1, pos2) {
+    var path = new google.maps.MVCArray();
+    var service = new google.maps.DirectionsService();
+
+    const lineSymbol = {
+        path: "M 0,-1 0,1",
+        strokeOpacity: 1,
+        scale: 4,
+    };
+
+    // Set the Path Stroke Color
+    var poly = new google.maps.Polyline({
+        path: [
+            { lat: 22.291, lng: 153.027 },
+            { lat: 18.291, lng: 153.027 },
+        ],
+        strokeOpacity: 0,
+        icons: [
+            {
+                icon: lineSymbol,
+                offset: "0",
+                repeat: "20px",
+            },
+        ],
+        map: map,
+    });
+
+    var lat_lng = new Array;
+
+    lat_lng.push(new google.maps.LatLng(pos1.lat, pos1.lng));
+    lat_lng.push(new google.maps.LatLng(pos2.lat, pos2.lng));
+
+    // Loop and Draw Path Route between the Points on MAP
+    for (var i = 0; i < lat_lng.length; i++) {
+        if ((i + 1) < lat_lng.length) {
+            var src = lat_lng[i];
+            var des = lat_lng[i + 1];
+            path.push(src);
+
+            poly.setPath(path);
+            service.route({
+                origin: src,
+                destination: des,
+                travelMode: google.maps.TravelMode.WALKING
+            }, function (result, status) {
+                if (status == google.maps.DirectionsStatus.OK) {
+                    if(result) {
+                        for (var i = 0, len = result.routes[0].overview_path.length; i < len; i++) {
+                            path.push(result.routes[0].overview_path[i]);
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    return path
 }
 
 function createBoundsForMarkers(m1, m2) {
@@ -206,8 +246,6 @@ function createBoundsForMarkers(m1, m2) {
 
     bounds.extend(m1);
     bounds.extend(m2);
-
-    console.log("bounds ", bounds.toString());
 
     return bounds;
 }
@@ -287,7 +325,7 @@ function moveTheThing(position, step) {
 
 function drawTheThing(position) {
     soldierMarker.setPosition(position);
-    map.setCenter(position);
+    //map.setCenter(position);
 }
 
 function rotateTheThing(position) {
