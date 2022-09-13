@@ -13,10 +13,10 @@ import $ from 'jquery';
 
 let map: google.maps.Map,
     infoWindow: google.maps.InfoWindow,
-    rocket: google.maps.Marker;
+    soldierMarker: google.maps.Marker;
 
 var homePos = {lat: 52.95381219378043, lng: -1.145829369884382};
-var svgUrl = 'soldier.svg';
+var soldierUrl = './soldier.svg';
 
 var counter = 0;
 var curveMarker;
@@ -26,9 +26,9 @@ function initMap(): void {
     var step = 100;
     infoWindow = new google.maps.InfoWindow();
 
-    rocket = new google.maps.Marker({
+    soldierMarker = new google.maps.Marker({
         icon: {
-            url: svgUrl, // url
+            url: soldierUrl, // url
             scaledSize: new google.maps.Size(50, 50)
         },
     });
@@ -128,9 +128,9 @@ function initMap(): void {
         width: mapDiv.width(),
     };
 
-    var pub = createMarkerForPoint(homePos);
-    pub.setIcon('base.svg');
-    pub.setMap(map);
+    var barracks = createMarkerForPoint(homePos);
+    barracks.setIcon('./base.svg');
+    barracks.setMap(map);
 
     var path = new google.maps.MVCArray();
     var service = new google.maps.DirectionsService();
@@ -197,7 +197,7 @@ function initMap(): void {
         }, 8000 / step);
     });
 
-    rocket.setMap(map);
+    soldierMarker.setMap(map);
 }
 
 function createBoundsForMarkers(m1, m2) {
@@ -285,7 +285,7 @@ function moveTheThing(position, step) {
 }
 
 function drawTheThing(position) {
-    rocket.setPosition(position);
+    soldierMarker.setPosition(position);
     map.setCenter(position);
 }
 
@@ -295,7 +295,7 @@ function rotateTheThing(position) {
 
         console.log('rotationAngle - ' + rotationAngle);
 
-        $('img[src="' + svgUrl + '"]').css({
+        $('img[src="' + soldierUrl + '"]').css({
             transform: 'rotate(' + rotationAngle + 'deg)',
             'transform-origin': '25px 25px',
         });
