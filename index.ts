@@ -10,13 +10,14 @@
 // locate you.
 
 import $ from 'jquery';
+import soldierUrl from './soldier.svg';
+import baseUrl from './base.svg';
 
 let map: google.maps.Map,
     infoWindow: google.maps.InfoWindow,
     soldierMarker: google.maps.Marker;
 
 var homePos = {lat: 52.95381219378043, lng: -1.145829369884382};
-var soldierUrl = './soldier.svg';
 
 var counter = 0;
 var curveMarker;
@@ -128,9 +129,9 @@ function initMap(): void {
         width: mapDiv.width(),
     };
 
-    var barracks = createMarkerForPoint(homePos);
-    barracks.setIcon('./base.svg');
-    barracks.setMap(map);
+    var base = createMarkerForPoint(homePos);
+    base.setIcon(baseUrl);
+    base.setMap(map);
 
     var path = new google.maps.MVCArray();
     var service = new google.maps.DirectionsService();

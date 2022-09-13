@@ -16,8 +16,7 @@
     "type": "git",
     "url": "git+https://github.com/googlemaps/js-samples.git"
   },
-  "files": ["soldier.svg",
-  "base.svg"],
+  "files": ["**/*.svg"],
   "license": "Apache-2.0",
   "scripts": {
     "dev": "vite",
